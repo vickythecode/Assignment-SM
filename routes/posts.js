@@ -1,13 +1,17 @@
 const express = require('express');
 const Post = require('../models/Post');
 const Comment = require('../models/Comment');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
 // Create a new post
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
   try {
-    const post = new Post(req.body);
+    const post = new Post({
+      ...req.body,
+      owner: req.user._id
+    });
     await post.save();
     res.status(201).send(post);
   } catch (error) {
@@ -16,7 +20,7 @@ router.post('/', async (req, res) => {
 });
 
 // Read all posts
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     const posts = await Post.find().populate('comments');
     res.status(200).send(posts);
@@ -26,7 +30,7 @@ router.get('/', async (req, res) => {
 });
 
 // Read a single post by id
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id).populate('comments');
     if (!post) {
@@ -39,7 +43,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update a post by id
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', auth, async (req, res) => {
   try {
     const post = await Post.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!post) {
@@ -52,7 +56,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // Delete a post by id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const post = await Post.findByIdAndDelete(req.params.id);
     if (!post) {
@@ -65,7 +69,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Like a post
-router.post('/:id/like', async (req, res) => {
+router.post('/:id/like', auth, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) {
@@ -80,7 +84,7 @@ router.post('/:id/like', async (req, res) => {
 });
 
 // Add a comment to a post
-router.post('/:id/comment', async (req, res) => {
+router.post('/:id/comment', auth, async (req, res) => {
   try {
     const comment = new Comment({
       postId: req.params.id,
